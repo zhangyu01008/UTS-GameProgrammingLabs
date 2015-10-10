@@ -1,0 +1,122 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Media;
+using Microsoft.Xna.Framework.Storage;
+
+namespace _11793546_lab04
+{
+    public class Camera : Microsoft.Xna.Framework.GameComponent
+    {
+        public Matrix view { get; protected set; }
+        public Matrix projection { get; protected set; }
+
+        public Vector3 cameraPosition { get; protected set; }
+        Vector3 cameraDirection;
+        Vector3 cameraUp;
+        float speed = 10f;
+        float jump_speed = 2;
+        float jump_height = 20;
+        MouseState prevMouseState;
+        int jump = 0;
+
+        public Camera(Game game, Vector3 pos, Vector3 target, Vector3 up): base(game)
+        {
+            //view = Matrix.CreateLookAt(pos, target, up);
+            cameraPosition = pos;
+            cameraDirection = target - pos;
+            cameraDirection.Normalize();
+            cameraUp = up;
+            CreateLookAt();
+            projection = Matrix.CreatePerspectiveFieldOfView(
+            MathHelper.PiOver4,
+            (float)Game.Window.ClientBounds.Width /
+            (float)Game.Window.ClientBounds.Height,
+            1, 2000);
+
+        }
+
+        private void CreateLookAt()
+        {
+            view = Matrix.CreateLookAt(cameraPosition,
+            cameraPosition + cameraDirection, cameraUp);
+        }
+
+        private void jumps()
+        {
+            if (Keyboard.GetState().IsKeyDown(Keys.Space) && jump == 0)
+            {
+                jump = 1;
+            }
+            if (jump == 1 && cameraPosition.Y < jump_height)
+            {
+                cameraPosition += new Vector3(0, 1, 0) * jump_speed;
+            }
+            if (jump == 1 && cameraPosition.Y >= jump_height)
+            {
+                jump = -1;
+            }
+            if (jump == -1 && cameraPosition.Y > 0)
+            {
+                cameraPosition += new Vector3(0, -1, 0) * jump_speed;
+            }
+            if (jump == -1 && cameraPosition.Y <= 3)
+            {
+                jump = 0;
+                cameraPosition += new Vector3(0, 3, 0);
+            }
+        }
+        public override void Initialize()
+        {
+            // TODO: Add your initialization code here
+            Mouse.SetPosition(Game.Window.ClientBounds.Width / 2,Game.Window.ClientBounds.Height / 2);
+            prevMouseState = Mouse.GetState();
+
+            base.Initialize();
+        }
+        public override void Update(GameTime gameTime)
+        {
+            // TODO: Add your update code here
+            if (Keyboard.GetState().IsKeyDown(Keys.W))
+                cameraPosition += new Vector3(cameraDirection.X, 0, cameraDirection.Z)  * speed;
+            if (Keyboard.GetState().IsKeyDown(Keys.S))
+                cameraPosition -= new Vector3(cameraDirection.X, 0, cameraDirection.Z) * speed;
+            if (Keyboard.GetState().IsKeyDown(Keys.A))
+                cameraPosition += Vector3.Cross(cameraUp, new Vector3(cameraDirection.X, 0, cameraDirection.Z)) * speed;
+            if (Keyboard.GetState().IsKeyDown(Keys.D))
+                cameraPosition -= Vector3.Cross(cameraUp, new Vector3(cameraDirection.X, 0, cameraDirection.Z)) * speed;
+
+            cameraDirection = Vector3.Transform(
+                cameraDirection,
+                Matrix.CreateFromAxisAngle(
+                    cameraUp, (-MathHelper.PiOver4 / 150) *(Mouse.GetState().X - prevMouseState.X)));
+
+
+            cameraDirection = Vector3.Transform
+                (cameraDirection,
+                Matrix.CreateFromAxisAngle(Vector3.Cross(cameraUp, cameraDirection),
+               (MathHelper.PiOver4 / 100) * (Mouse.GetState().Y - prevMouseState.Y)));
+
+            //cameraUp = Vector3.Transform(
+            //    cameraUp,
+            //    Matrix.CreateFromAxisAngle(Vector3.Cross(cameraUp, cameraDirection),
+            //   (MathHelper.PiOver4 / 100) * (Mouse.GetState().Y - prevMouseState.Y)));
+            //float a = new Game.Window.ClientBounds.Width; 
+            //Mouse.SetPosition(Game.Window.ClientBounds.Width / 2, Game.Window.ClientBounds.Height / 2);
+            
+            //if (jump != 0 || Keyboard.GetState().IsKeyDown(Keys.Space))
+            //{
+            //    jumps();
+            //}
+            CreateLookAt();
+            prevMouseState = Mouse.GetState();
+            base.Update(gameTime);
+        }
+    }
+}
+
